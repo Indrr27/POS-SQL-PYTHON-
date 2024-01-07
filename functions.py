@@ -1,10 +1,11 @@
 import mysql.connector
 
 mydb = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="bob12345678",
-    database="er_diagram"
+    host="sql5.freesqldatabase.com",
+    port =3306,
+    user="sql5675113",
+    password="X4YdRtGYWm",
+    database="sql5675113"
 )
 
 cursor = mydb.cursor()
@@ -118,9 +119,21 @@ def createTables():
 
 def populate_table():
     cursor.execute("""INSERT INTO Product_category (ProductCategoryID, CategoryName) VALUES
-                            ('PC001', 'Home & Electronics'),
-                            ('PC002', 'Health & Wellness'),
-                            ('PC003', 'Prescriptions'); """)
+                        ('PC001', 'Home & Electronics'),
+                        ('PC002', 'Health & Wellness'),
+                        ('PC003', 'Prescriptions'),
+                        ('PC004', 'Groceries'),
+                        ('PC005', 'Clothing'),
+                        ('PC006', 'Toys & Games'),
+                        ('PC007', 'Books'),
+                        ('PC008', 'Sports'),
+                        ('PC009', 'Office Supplies'),
+                        ('PC010', 'Gardening Tools'),
+                        ('PC011', 'Beauty Products'),
+                        ('PC012', 'Footwear'),
+                        ('PC013', 'Jewelry'),
+                        ('PC014', 'Automotive'),
+                        ('PC015', 'Pet Supplies'); """)
     mydb.commit()
     cursor.execute("""INSERT INTO Address1 (StreetName, PostalCode, StreetNumber) VALUES
                                 ('Main Rd', 'M4R 9D0', '345'),
@@ -163,15 +176,41 @@ def populate_table():
                     ('SID003', 'Main Rd');""")
     mydb.commit()
     cursor.execute("""INSERT INTO Inventory (inventoryID, Quantity) VALUES
-                ('INV01', 100),
-                ('INV02', 200),
-                ('INV03', 300); """)
+    ('INV01', 100),
+    ('INV02', 200),
+    ('INV03', 300),
+    ('INV04', 150),
+    ('INV05', 100),
+    ('INV06', 250),
+    ('INV07', 250),
+    ('INV08', 100),
+    ('INV09', 120),
+    ('INV10', 150),
+    ('INV11', 80),
+    ('INV12', 60),
+    ('INV13', 100),
+    ('INV14', 200),
+    ('INV15', 150);
+ """)
     mydb.commit()
 
-    cursor.execute("""INSERT INTO Product (ProductID,ProductName, Price, ProductCategoryID, inventoryID) VALUES 
-                                    ('PR001', 'Iphone', 1200,  'PC001', 'INV01'),
-                                    ('PR002', 'Toothbrush', 25.3,  'PC002', 'INV02'),
-                                    ('PR003', 'Mirror', 45.50, 'PC003', 'INV03'); """)
+    cursor.execute("""INSERT INTO Product (ProductID, ProductName, Price, ProductCategoryID, inventoryID) VALUES 
+    ('PR001', 'Iphone', 1200, 'PC001', 'INV01'),
+    ('PR002', 'Toothbrush', 25.3, 'PC002', 'INV02'),
+    ('PR003', 'Mirror', 45.50, 'PC003', 'INV03'),
+    ('PR004', 'Laptop', 800, 'PC001', 'INV04'),
+    ('PR005', 'Speaker', 150, 'PC001', 'INV05'),
+    ('PR006', 'Vitamins', 30, 'PC002', 'INV06'),
+    ('PR007', 'Pain Reliever', 20, 'PC002', 'INV07'),
+    ('PR008', 'Book "Sapiens"', 20, 'PC007', 'INV08'),
+    ('PR009', 'Running Shoes', 100, 'PC008', 'INV09'),
+    ('PR010', 'Yoga Mat', 50, 'PC008', 'INV10'),
+    ('PR011', 'Desk Lamp', 45, 'PC009', 'INV11'),
+    ('PR012', 'Office Chair', 200, 'PC009', 'INV12'),
+    ('PR013', 'Gardening Shovel', 35, 'PC010', 'INV13'),
+    ('PR014', 'Plant Fertilizer', 15, 'PC010', 'INV14'),
+    ('PR015', 'Dog Leash', 20, 'PC015', 'INV15');
+ """)
     mydb.commit()
 
     cursor.execute("""INSERT INTO Invoice (InvoiceId, Total, PaymentType, Date, CustomerID) VALUES
