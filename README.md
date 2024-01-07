@@ -47,16 +47,16 @@ Once you start the application by running `GUI.py`, you can interact with the cl
 
 
 ##Recent changes (Jan-06-2024)
--Enhanced Database Interactions: Updated functions for improved compatibility and performance with the cloud-based SQL database.
--Code Refinement: Improved overall code structure and readability for better maintainability.
--Reliable Testing: Conducted comprehensive tests to ensure seamless integration with the SQL database.
+- **Enhanced Database Interactions**: Updated functions for improved compatibility and performance with the cloud-based SQL database.
+- **Code Refinement**: Improved overall code structure and readability for better maintainability.
+- **Reliable Testing**: Conducted comprehensive tests to ensure seamless integration with the SQL database.
 
 ##Upcoming changes (Jan-06-2024)
--recipt generation
--maybe better gui(not to good with design lol)
--return system
--greater inventory
--login screen 
+- **recipt generation**
+- **maybe better gui(not to good with design lol)**
+- **return system**
+- **greater inventory**
+- **login screen** 
 *note for all of these changes i have created a table formated in 3nf*
 
 
