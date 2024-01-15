@@ -10,6 +10,13 @@ this is an advanced Python application designed for efficient and seamless datab
 - **No Local SQL Dependency**: Runs without needing any local SQL server installation, thanks to its cloud-based architecture.
 - **Simple Setup**: Only requires Python to run, with no complex installation process.
 
+## Recent changes (Jan-14-2024)
+- **Reciept Generation**: Added a Reciept generation feature, where after a sale is finalized a reciept is created 
+
+## Upcoming changes (Jan-14-2024)
+- **View Past Reciepts**: This feature is nearly complete just need to find a cleaner way of asking user for payment information and generating customer data. 
+
+
 ## Getting Started
 
 1. **Clone the Repository**:
@@ -46,13 +53,14 @@ Once you start the application by running `GUI.py`, you can interact with the cl
 
 
 
-##Recent changes (Jan-06-2024)
+## Past Change Log! 
+
+## Recent changes (Jan-06-2024)
 - **Enhanced Database Interactions**: Updated functions for improved compatibility and performance with the cloud-based SQL database.
 - **Code Refinement**: Improved overall code structure and readability for better maintainability.
 - **Reliable Testing**: Conducted comprehensive tests to ensure seamless integration with the SQL database.
 
-##Upcoming changes (Jan-06-2024)
-- **recipt generation**
+## Upcoming changes (Jan-06-2024) KEEP IN MIND STILL THE WORKS AS OF (Jan-14-2024)
 - **maybe better gui(not to good with design lol)**
 - **return system**
 - **greater inventory**
