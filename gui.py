@@ -10,6 +10,7 @@ def Home():
     layout = [
         [sg.Text('POS System Dashboard', size=(30, 1), justification='center', font=("Helvetica", 25))],
         [sg.Button('Make a Sale', size=(20, 2)), sg.Button('View Inventory', size=(20, 2))],
+        #[sg.Button('View Past Receipts')]
        # [sg.Button('Generate Report', size=(20, 2)), sg.Button('Exit', size=(20, 2))]
     ]
 
@@ -22,6 +23,8 @@ def Home():
             process_sale()
         elif event == 'View Inventory':
             view_inventory()
+       # elif event == 'View Past Receipts':
+           # view_past_receipts()
         #elif event == 'Generate Report':
             #generate_report()
 
@@ -148,7 +151,11 @@ def process_sale():
                 print(quantity_sold)
                 update_inventory(product_id, quantity_sold)
 
+
+
             sg.popup(f'Sale finalized.\nTotal Cost: ${total_cost}')
+            receipt = generate_receipt(cart_items)
+            sg.popup_scrolled(receipt, title="Receipt", size=(50, 20))
             break
 
     window.close()
@@ -369,6 +376,45 @@ def add_new_product():
 
 
 
+def generate_receipt(cart_items):
+    total_cost = 0
+    receipt = "----- Receipt -----\n"
+    for item in cart_items:
+        parts = item.split(', ')
+        product_id = parts[0].split(': ')[1]
+        quantity = int(parts[1].split(': ')[1])
+        cost = float(parts[2].split('$')[1])
+        total_cost += cost
+        receipt += f"Product ID: {product_id}, Quantity: {quantity}, Cost: ${cost}\n"
+    receipt += f"Total Cost: ${total_cost}\n"
+    receipt += "------------------\n"
+    return receipt
+
+
+def view_past_receipts():
+    past_sales = fetch_past_sales()  
+
+    layout = [
+        [sg.Listbox(past_sales, size=(30, 10), key='past_sales')],
+        [sg.Button('Show Receipt'), sg.Button('Cancel')]
+    ]
+
+    window = sg.Window('Past Receipts', layout)
+
+    while True:
+        event, values = window.read()
+        if event == 'Show Receipt':
+            selected_sale = values['past_sales'][0]
+            # You need to implement get_receipt_for_sale in Functions.py
+            receipt = get_receipt_for_sale(selected_sale)
+            sg.popup_scrolled(receipt, title="Receipt", size=(50, 20))
+        elif event in (sg.WIN_CLOSED, 'Cancel'):
+            break
+
+    window.close()
+
+
+
 
 #def generate_report():
     # Function to generate/view reports
@@ -379,9 +425,9 @@ if __name__ == "__main__":
     mydb = mysql.connector.connect(
         host="sql5.freesqldatabase.com",
         port =3306,
-        user="sql5675113",
-        password="X4YdRtGYWm",
-        database="sql5675113"
+        user="sql5676986",
+        password="T4MSnhcQ7Q",
+        database="sql5676986"
     )
     cursor = mydb.cursor()
 

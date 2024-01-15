@@ -3,9 +3,9 @@ import mysql.connector
 mydb = mysql.connector.connect(
     host="sql5.freesqldatabase.com",
     port =3306,
-    user="sql5675113",
-    password="X4YdRtGYWm",
-    database="sql5675113"
+    user="sql5676986",
+    password="T4MSnhcQ7Q",
+    database="sql5676986"
 )
 
 cursor = mydb.cursor()
@@ -449,3 +449,44 @@ def update1(sg, table):
           values[3] + "\' WHERE CustomerName= \'" + values[0] + "\'"
     cursor.execute(sql)
     window.close()
+
+def fetch_past_sales():
+    past_sales = []
+    try:
+        cursor.execute("SELECT InvoiceId, Date FROM Invoice ORDER BY Date DESC")
+        results = cursor.fetchall()
+        for row in results:
+            # Format the sales summary as needed
+            sale_summary = f"Invoice ID: {row[0]}, Date: {row[1]}"
+            past_sales.append(sale_summary)
+    except mysql.connector.Error as err:
+        print("Error occurred: ", err)
+    return past_sales
+
+
+def get_receipt_for_sale(sale_summary):
+    # Extract InvoiceId from the sale_summary
+    invoice_id = sale_summary.split(",")[0].split(":")[1].strip()
+
+    receipt = "----- Receipt -----\n"
+    try:
+        # Fetch sale details from the database
+        cursor.execute("SELECT ProductID, Quantity, Price FROM SalesOrder2 WHERE InvoiceID = %s", (invoice_id,))
+        results = cursor.fetchall()
+
+        total_cost = 0
+        for product_id, quantity, price in results:
+            cost = quantity * price
+            total_cost += cost
+            receipt += f"Product ID: {product_id}, Quantity: {quantity}, Unit Price: ${price}, Cost: ${cost}\n"
+
+        receipt += f"Total Cost: ${total_cost}\n"
+        receipt += "------------------\n"
+    except mysql.connector.Error as err:
+        print("Error occurred: ", err)
+        receipt += "Error in generating receipt\n"
+    
+    return receipt
+
+
+
