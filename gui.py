@@ -1,17 +1,14 @@
 import PySimpleGUI as sg
-import mysql.connector
+import sqlite3
 from functions import *
 import re
-
-
 
 def Home():
     sg.theme('DarkAmber')
     layout = [
         [sg.Text('POS System Dashboard', size=(30, 1), justification='center', font=("Helvetica", 25))],
         [sg.Button('Make a Sale', size=(20, 2)), sg.Button('View Inventory', size=(20, 2))],
-        #[sg.Button('View Past Receipts')]
-       # [sg.Button('Generate Report', size=(20, 2)), sg.Button('Exit', size=(20, 2))]
+        [sg.Button('View Past Receipts', size=(20, 2))]
     ]
 
     window = sg.Window('POS System', layout, size=(500, 300))
@@ -23,18 +20,17 @@ def Home():
             process_sale()
         elif event == 'View Inventory':
             view_inventory()
-       # elif event == 'View Past Receipts':
-           # view_past_receipts()
-        #elif event == 'Generate Report':
-            #generate_report()
+        elif event == 'View Past Receipts':
+            view_past_receipts()
 
     window.close()
+
 
 def initialize_database(cursor):
     try:
         createTables()
         populate_table()
-    except mysql.connector.Error as err:
+    except sqlite3.Error as err:
         print(f"Error occurred: {err}")
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -53,17 +49,17 @@ def fetch_products():
     category_products = {}
     all_product_ids = set()  # Set to store all product IDs
     for cat_id, cat_name in categories:
-        cursor.execute("""
-            SELECT p.ProductID, p.ProductName, i.Quantity, p.Price  # Assuming Price is in Product table
+        cursor.execute(f"""
+            SELECT p.ProductID, p.ProductName, i.Quantity, p.Price
             FROM Product p 
             JOIN Inventory i ON p.inventoryID = i.inventoryID 
-            WHERE ProductCategoryID = %s""", (cat_id,))
+            WHERE ProductCategoryID = ?
+        """, (cat_id,))
         products = cursor.fetchall()
         category_products[cat_name] = products
         all_product_ids.update(pid for pid, _, _, _ in products)
 
     return category_products, all_product_ids
-
 
 def process_sale():
     sg.theme('DarkAmber')
@@ -83,6 +79,8 @@ def process_sale():
         product_dropdowns,
         [sg.Listbox(values=[], size=(40, 10), key='cart')],
         [sg.Text('Total: $0', key='total')],
+        [sg.Text('Payment Type'), sg.InputText(key='payment_type')],  # New input for payment type
+        [sg.Text('Customer ID (optional)'), sg.InputText(key='customer_id')]  # New input for customer ID
     ]
 
     window = sg.Window('Process Sale', layout)
@@ -144,21 +142,22 @@ def process_sale():
                 sg.popup('Error: No items in the cart')
                 continue
 
+            payment_type = values['payment_type']
+            customer_id = values['customer_id'] if values['customer_id'] else None
+            invoice_id = save_invoice(total_cost, payment_type, customer_id)
+
             for item in cart_items:
                 product_id, quantity_sold = extract_product_id_and_quantity(item)
-                print(item)
-                print(product_id)
-                print(quantity_sold)
                 update_inventory(product_id, quantity_sold)
+                save_sales_order(invoice_id, product_id, quantity_sold, product_details[product_id]["price"])
 
-
-
-            sg.popup(f'Sale finalized.\nTotal Cost: ${total_cost}')
+            sg.popup(f'Sale finalized.\nTotal Cost: ${total_cost}\nInvoice ID: {invoice_id}')
             receipt = generate_receipt(cart_items)
             sg.popup_scrolled(receipt, title="Receipt", size=(50, 20))
             break
 
     window.close()
+
 
 def extract_cost_from_cart_item(item):
     cost_str = item.split('Cost: $')[1]
@@ -170,10 +169,9 @@ def extract_product_id_and_quantity(item):
     quantity = int(parts[1].split(': ')[1])
     return product_id, quantity
 
-
 def update_inventory(product_id, quantity_sold):
     # Find the inventoryID associated with the ProductID
-    cursor.execute("SELECT inventoryID FROM Product WHERE ProductID = %s", (product_id,))
+    cursor.execute("SELECT inventoryID FROM Product WHERE ProductID = ?", (product_id,))
     result = cursor.fetchone()
 
     if result is None:
@@ -183,7 +181,7 @@ def update_inventory(product_id, quantity_sold):
     inventory_id = result[0]
 
     # Fetch current inventory level using inventoryID
-    cursor.execute("SELECT Quantity FROM Inventory WHERE inventoryID = %s", (inventory_id,))
+    cursor.execute("SELECT Quantity FROM Inventory WHERE inventoryID = ?", (inventory_id,))
     result = cursor.fetchone()
 
     if result is None:
@@ -201,7 +199,7 @@ def update_inventory(product_id, quantity_sold):
     new_quantity = current_quantity - quantity_sold
 
     # Update inventory in database using inventoryID
-    cursor.execute("UPDATE Inventory SET Quantity = %s WHERE inventoryID = %s", (new_quantity, inventory_id,))
+    cursor.execute("UPDATE Inventory SET Quantity = ? WHERE inventoryID = ?", (new_quantity, inventory_id))
     mydb.commit()
 
 def fetch_inventory_data():
@@ -253,8 +251,6 @@ def view_inventory():
 
     window.close()
 
-
-
 def update_product(selected_product):
     layout = [
         [sg.Text('Product ID'), sg.InputText(selected_product[0], key='product_id', disabled=True)],
@@ -284,14 +280,14 @@ def update_product(selected_product):
             # Update database logic
             cursor.execute("""
                 UPDATE Product 
-                SET Price = %s
-                WHERE ProductID = %s
+                SET Price = ?
+                WHERE ProductID = ?
             """, (int(price), product_id,))
             cursor.execute("""
                 UPDATE Inventory 
-                SET Quantity = %s
+                SET Quantity = ?
                 WHERE inventoryID = (
-                    SELECT inventoryID FROM Product WHERE ProductID = %s
+                    SELECT inventoryID FROM Product WHERE ProductID = ?
                 )
             """, (int(quantity), product_id,))
             mydb.commit()
@@ -300,10 +296,6 @@ def update_product(selected_product):
             break
             
     window.close()
-    
-    
-
-
 
 def add_new_product():
     # Fetch product categories
@@ -351,7 +343,7 @@ def add_new_product():
                 continue
 
             # Check for duplicate product name
-            cursor.execute("SELECT COUNT(*) FROM Product WHERE ProductName = %s", (product_name,))
+            cursor.execute("SELECT COUNT(*) FROM Product WHERE ProductName = ?", (product_name,))
             if cursor.fetchone()[0] > 0:
                 sg.popup("A product with this name already exists. Please use a different name.")
                 continue
@@ -359,11 +351,11 @@ def add_new_product():
             # Add product to database
             cursor.execute("""
                 INSERT INTO Inventory (inventoryID, Quantity)
-                VALUES (%s, %s)
+                VALUES (?, ?)
             """, (inventory_id, int(quantity)))
             cursor.execute("""
                 INSERT INTO Product (ProductID, ProductName, Price, ProductCategoryID, inventoryID)
-                VALUES (%s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?)
             """, (product_id, product_name, int(price), product_category_id, inventory_id))
             mydb.commit()
 
@@ -371,10 +363,6 @@ def add_new_product():
             break
     
     window.close()
-   
-    
-
-
 
 def generate_receipt(cart_items):
     total_cost = 0
@@ -390,9 +378,8 @@ def generate_receipt(cart_items):
     receipt += "------------------\n"
     return receipt
 
-
 def view_past_receipts():
-    past_sales = fetch_past_sales()  
+    past_sales = fetch_past_sales()
 
     layout = [
         [sg.Listbox(past_sales, size=(30, 10), key='past_sales')],
@@ -405,7 +392,6 @@ def view_past_receipts():
         event, values = window.read()
         if event == 'Show Receipt':
             selected_sale = values['past_sales'][0]
-            # You need to implement get_receipt_for_sale in Functions.py
             receipt = get_receipt_for_sale(selected_sale)
             sg.popup_scrolled(receipt, title="Receipt", size=(50, 20))
         elif event in (sg.WIN_CLOSED, 'Cancel'):
@@ -414,21 +400,9 @@ def view_past_receipts():
     window.close()
 
 
-
-
-#def generate_report():
-    # Function to generate/view reports
-    #pass
-
 if __name__ == "__main__":
     # Database connection
-    mydb = mysql.connector.connect(
-        host="sql5.freesqldatabase.com",
-        port =3306,
-        user="sql5678911",
-        password="VHl62wNqgj",
-        database="sql5678911"
-    )
+    mydb = sqlite3.connect('mydatabase.db')
     cursor = mydb.cursor()
 
     initialize_database(cursor)

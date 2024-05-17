@@ -1,124 +1,142 @@
-import mysql.connector
+import sqlite3
+import time
+import uuid
 
-mydb = mysql.connector.connect(
-    host="sql5.freesqldatabase.com",
-    port =3306,
-    user="sql5678911",
-    password="VHl62wNqgj",
-    database="sql5678911"
-)
-
+# Connect to SQLite database (it will create the database file if it doesn't exist)
+mydb = sqlite3.connect('mydatabase.db', check_same_thread=False)
 cursor = mydb.cursor()
 
 
+def retry_on_locked(func):
+    def wrapper(*args, **kwargs):
+        retries = 5
+        delay = 1
+        for i in range(retries):
+            try:
+                return func(*args, **kwargs)
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e):
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    raise
+        raise sqlite3.OperationalError("database is locked after several retries")
+    return wrapper
+
+
+@retry_on_locked
 def createTables():
-    cursor.execute("""CREATE TABLE Product_category(
-                    ProductCategoryID varchar(20) NOT NULL PRIMARY KEY,
-                    CategoryName varchar(20));""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Product_category(
+                    ProductCategoryID TEXT NOT NULL PRIMARY KEY,
+                    CategoryName TEXT);""")
 
     mydb.commit()
-    cursor.execute("""CREATE TABLE Address1(
-                            StreetName varchar(20) NOT NULL PRIMARY KEY,
-                            PostalCode varchar(20),
-                            StreetNumber varchar(20));""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Address1(
+                            StreetName TEXT NOT NULL PRIMARY KEY,
+                            PostalCode TEXT,
+                            StreetNumber TEXT);""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE Address2(
-                    AddressID varchar(20) NOT NULL PRIMARY KEY,
-                    StreetName varchar(20),
-                    StreetNumber varchar(20),
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Address2(
+                    AddressID TEXT NOT NULL PRIMARY KEY,
+                    StreetName TEXT,
+                    StreetNumber TEXT,
                     FOREIGN KEY (StreetName) REFERENCES Address1(StreetName));""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE Admin
-            (UserID varchar(20) NOT NULL PRIMARY KEY,
-            UserName varchar(20),
-            UserPassword varchar(8)
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Admin
+            (UserID TEXT NOT NULL PRIMARY KEY,
+            UserName TEXT,
+            UserPassword TEXT
             );""")
     mydb.commit()
-    cursor.execute(""" CREATE TABLE customer
+    cursor.execute(""" CREATE TABLE IF NOT EXISTS customer
     (
-                CustomerID varchar(20) NOT NULL PRIMARY KEY,
-                CustomerName varchar(40),
-                addressID varchar(20) NOT NULL,
-                Email varchar(40) NOT NULL,
-                DateOfBirth date,
-                PhoneNum varchar(20),
+                CustomerID TEXT NOT NULL PRIMARY KEY,
+                CustomerName TEXT,
+                addressID TEXT NOT NULL,
+                Email TEXT NOT NULL,
+                DateOfBirth DATE,
+                PhoneNum TEXT,
                 FOREIGN KEY (addressID) REFERENCES Address2(AddressID)
             );""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE Supplier1 (
-            SupplierID varchar(20) PRIMARY KEY,
-            Surname VARCHAR(255) NOT NULL,
-            Contact VARCHAR(255) NOT NULL
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Supplier1 (
+            SupplierID TEXT PRIMARY KEY,
+            Surname TEXT NOT NULL,
+            Contact TEXT NOT NULL
         );""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE Supplier2 (
-            SupplierID varchar(20) PRIMARY KEY,
-            addressID varchar(20) NOT NULL,
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Supplier2 (
+            SupplierID TEXT PRIMARY KEY,
+            addressID TEXT NOT NULL,
             FOREIGN KEY (addressID) REFERENCES Address1(StreetName)
         );""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE test(
-                       testid varchar(20) NOT NULL PRIMARY KEY);""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS test(
+                       testid TEXT NOT NULL PRIMARY KEY);""")
 
     mydb.commit()
-    cursor.execute("""CREATE TABLE Inventory 
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Inventory 
         ( 
-        inventoryID varchar(20) NOT NULL PRIMARY KEY, 
-        Quantity int
+        inventoryID TEXT NOT NULL PRIMARY KEY, 
+        Quantity INTEGER
         );""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE Product 
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Product 
         ( 
-        ProductID varchar(12) NOT NULL PRIMARY KEY,
-        ProductName varchar(30),
-        Price int,
-        ProductCategoryID varchar(20) NOT NULL,
-        inventoryID varchar(20) NOT NULL,
+        ProductID TEXT NOT NULL PRIMARY KEY,
+        ProductName TEXT,
+        Price REAL,
+        ProductCategoryID TEXT NOT NULL,
+        inventoryID TEXT NOT NULL,
         FOREIGN KEY (ProductCategoryID) REFERENCES Product_category(ProductCategoryID),
         FOREIGN KEY (inventoryID) REFERENCES Inventory(inventoryID)
         );
         """)
     mydb.commit()
-    cursor.execute("""CREATE TABLE Invoice -- already in 3NF
+    cursor.execute("""CREATE TABLE IF NOT EXISTS Invoice -- already in 3NF
         (
-        InvoiceId varchar(20) NOT NULL PRIMARY KEY,
-        Total int NOT NULL,
-        PaymentType varchar(12) NOT NULL,
-        Date date NOT NULL,
-        CustomerID varchar(20),
+        InvoiceId TEXT NOT NULL PRIMARY KEY,
+        Total INTEGER NOT NULL,
+        PaymentType TEXT NOT NULL,
+        Date DATE NOT NULL,
+        CustomerID TEXT,
         FOREIGN KEY (CustomerID) REFERENCES customer(CustomerID)
         );""")
     mydb.commit()
-    cursor.execute("""CREATE table Purchase_order -- already in 3NF
+    cursor.execute("""CREATE table IF NOT EXISTS Purchase_order -- already in 3NF
         (
-        PurchaseID varchar(20) NOT NULL PRIMARY KEY,
-        Date date,
-        Quantity int,
-        supplier_price int,
-        Subtotal_Supplier int NOT NULL,
-        SupplierID varchar(20),
-        InvoiceID varchar(20),
-        ProductID varchar(12),
+        PurchaseID TEXT NOT NULL PRIMARY KEY,
+        Date DATE,
+        Quantity INTEGER,
+        supplier_price INTEGER,
+        Subtotal_Supplier INTEGER NOT NULL,
+        SupplierID TEXT,
+        InvoiceID TEXT,
+        ProductID TEXT,
         FOREIGN KEY (SupplierID) REFERENCES Supplier1(SupplierID),
         FOREIGN KEY (InvoiceID) REFERENCES Invoice(InvoiceId),
         FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
         );""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE SalesOrder1 (
-      SalesID varchar(20) PRIMARY KEY,
-      Quantity_sold INT NOT NULL,
-      Subtotal DECIMAL(10,2) NOT NULL
+    cursor.execute("""CREATE TABLE IF NOT EXISTS SalesOrder1 (
+      SalesID TEXT PRIMARY KEY,
+      Quantity_sold INTEGER NOT NULL,
+      Subtotal REAL NOT NULL
     );""")
     mydb.commit()
-    cursor.execute("""CREATE TABLE SalesOrder2 (
-      SalesID varchar(20) PRIMARY KEY,
-      ProductID varchar(20) NOT NULL,
+    cursor.execute("""CREATE TABLE IF NOT EXISTS SalesOrder2 (
+      SalesID TEXT PRIMARY KEY,
+      ProductID TEXT NOT NULL,
+      Quantity INTEGER NOT NULL,
+      Price REAL NOT NULL,
       FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
     );""")
+    mydb.commit()
 
 
+@retry_on_locked
 def populate_table():
-    cursor.execute("""INSERT INTO Product_category (ProductCategoryID, CategoryName) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO Product_category (ProductCategoryID, CategoryName) VALUES
                         ('PC001', 'Home & Electronics'),
                         ('PC002', 'Health & Wellness'),
                         ('PC003', 'Prescriptions'),
@@ -135,19 +153,19 @@ def populate_table():
                         ('PC014', 'Automotive'),
                         ('PC015', 'Pet Supplies'); """)
     mydb.commit()
-    cursor.execute("""INSERT INTO Address1 (StreetName, PostalCode, StreetNumber) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO Address1 (StreetName, PostalCode, StreetNumber) VALUES
                                 ('Main Rd', 'M4R 9D0', '345'),
                                 ('Main Street', 'J3X 0M1', '298'),
                                 ('Main Ave', 'L3L 3P7', '099'); """)
     mydb.commit()
-    cursor.execute("""INSERT INTO Address2 (AddressID, StreetName, StreetNumber) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO Address2 (AddressID, StreetName, StreetNumber) VALUES
                                     ('A001', 'Main Rd', '345'),
                                     ('A002', 'Main Street', '298'),
                                     ('A003', 'Main Ave', '099'); """)
     mydb.commit()
 
 
-    cursor.execute("""INSERT INTO Admin (UserID, UserName, UserPassword) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO Admin (UserID, UserName, UserPassword) VALUES
             ('UID001', 'Bob', '123'),
             ('UID002', 'Bobby', '321'),
             ('UID003', 'Bobber', '12321'); """)
@@ -155,7 +173,7 @@ def populate_table():
     mydb.commit()
 
 
-    cursor.execute("""INSERT INTO customer (CustomerID, CustomerName, addressID, Email, DateOfBirth, PhoneNum) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO customer (CustomerID, CustomerName, addressID, Email, DateOfBirth, PhoneNum) VALUES
                         ('C005', 'BOB', 'A001','bob@example.com', '1969-04-01', '123-456-7890'),
                         ('C001', 'Inder', 'A002', 'inder@example.com', '2002-03-27', '123-456-7890'),
                         ('C002', 'Manan', 'A003', 'manan@example.com', '2002-02-12', '234-567-8901'),
@@ -163,19 +181,19 @@ def populate_table():
                         ('C004', 'Ama', 'A003', 'ama@example.com', '2002-02-13', '345-678-9012'); """)
     mydb.commit()
 
-    cursor.execute("""INSERT INTO Supplier1 (SupplierID, Surname, Contact) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO Supplier1 (SupplierID, Surname, Contact) VALUES
                     ('SID001', 'Smith', '111-111-1111'),
                     ('SID002', 'Johnson', '222-222-2222'),
                     ('SID003', 'Williams', '333-333-3333');""")
     mydb.commit()
 
 
-    cursor.execute("""INSERT INTO Supplier2 (SupplierID, addressID) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO Supplier2 (SupplierID, addressID) VALUES
                     ('SID001', 'Main Rd'),
                     ('SID002', 'Main Rd'),
                     ('SID003', 'Main Rd');""")
     mydb.commit()
-    cursor.execute("""INSERT INTO Inventory (inventoryID, Quantity) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO Inventory (inventoryID, Quantity) VALUES
     ('INV01', 100),
     ('INV02', 200),
     ('INV03', 300),
@@ -194,7 +212,7 @@ def populate_table():
  """)
     mydb.commit()
 
-    cursor.execute("""INSERT INTO Product (ProductID, ProductName, Price, ProductCategoryID, inventoryID) VALUES 
+    cursor.execute("""INSERT OR IGNORE INTO Product (ProductID, ProductName, Price, ProductCategoryID, inventoryID) VALUES 
     ('PR001', 'Iphone', 1200, 'PC001', 'INV01'),
     ('PR002', 'Toothbrush', 25.3, 'PC002', 'INV02'),
     ('PR003', 'Mirror', 45.50, 'PC003', 'INV03'),
@@ -213,35 +231,25 @@ def populate_table():
  """)
     mydb.commit()
 
-    cursor.execute("""INSERT INTO Invoice (InvoiceId, Total, PaymentType, Date, CustomerID) VALUES
-            ('IN00001', 100, 'Credit Card', '2023-01-01', 'C001'),
-            ('IN00002', 200, 'Debit Card', '2023-01-02', 'C002'),
-            ('IN00003', 300, 'Cash', '2023-01-03', 'C003');   """)
-    mydb.commit()
 
-    cursor.execute("""INSERT INTO Purchase_order (PurchaseID, Date, Quantity, supplier_price, Subtotal_Supplier, SupplierID, InvoiceID, ProductID) VALUES
+
+    cursor.execute("""INSERT OR IGNORE INTO Purchase_order (PurchaseID, Date, Quantity, supplier_price, Subtotal_Supplier, SupplierID, InvoiceID, ProductID) VALUES
         ('PO-0001', '2022-01-01', 10, 1000, 2000,'SID001', 'IN00001', 'PR001'),
         ('PO-0002', '2022-02-01', 20, 2000, 2000,'SID002', 'IN00002', 'PR002'),
         ('PO-0003', '2022-03-01', 30, 3000, 2000,'SID003', 'IN00003', 'PR003');""")
     mydb.commit()
 
-    cursor.execute("""INSERT INTO SalesOrder1 (SalesID, Quantity_sold, Subtotal) VALUES
+    cursor.execute("""INSERT OR IGNORE INTO SalesOrder1 (SalesID, Quantity_sold, Subtotal) VALUES
         ('S001', 5, 50),
         ('S002', 10, 100),
         ('S003', 15, 150);""")
     mydb.commit()
 
-    cursor.execute("""INSERT INTO SalesOrder2 (SalesID, ProductID) VALUES
-        ('S001', 'PR001'),
-        ('S002', 'PR002'),
-        ('S003', 'PR003');""")
-    mydb.commit()
-
-
 
 
 # -------------------------------------------------------------------------
 # Read table
+@retry_on_locked
 def view_table(sg):
     sg.theme('DarkAmber')
     layout = [[sg.Text('Please enter the table name to view')],
@@ -258,6 +266,7 @@ def view_table(sg):
         window.close()
 
 
+@retry_on_locked
 def view(sg):
     layout = [[sg.Text('Table includes')]]
     for x in cursor:
@@ -269,6 +278,7 @@ def view(sg):
         window.close()
 
 
+@retry_on_locked
 def drop_table(sg):
     sg.theme('DarkAmber')
     layout = [[sg.Text('Please enter the table to be dropped')],
@@ -281,11 +291,12 @@ def drop_table(sg):
     if event == sg.WIN_CLOSED or event == 'Close':
         window.close()
     else:
-        sql = "DROP TABLE " + values[0]
+        sql = "DROP TABLE IF EXISTS " + values[0]
         cursor.execute(sql)
         window.close()
 
 
+@retry_on_locked
 def delete(sg):
     sg.theme('DarkAmber')
     layout = [[sg.Text('Please select the table to delete from')],
@@ -325,6 +336,7 @@ def delete(sg):
     window.close()
 
 
+@retry_on_locked
 def delte_helper(sg, table, identity):
     sg.theme('DarkAmber')
     layout = [[sg.Text(f'Enter {identity}'), sg.InputText()],
@@ -333,30 +345,13 @@ def delte_helper(sg, table, identity):
     event, values = window.read()
     if event == sg.WIN_CLOSED or event == 'Close':
         window.close()
-    elif table == "Admin":
-        sql = "DELETE FROM " + table + " WHERE Username= \'" + values[0] + "\'"
-    elif table == "Inventory":
-        sql = "DELETE FROM " + table + " WHERE ProductID= \'" + values[0] + "\'"
-    elif table == "saleOrder1" or table == "saleOrder2":
-        sql = "DELETE FROM " + table + " WHERE SalesID= \'" + values[0] + "\'"
-    elif table == "Purchase_order":
-        sql = "DELETE FROM " + table + " WHERE PurchaseID= \'" + values[0] + "\'"
-    elif table == "Product":
-        sql = "DELETE FROM " + table + " WHERE ProductName= \'" + values[0] + "\'"
-    elif table == "Invoice":
-        sql = "DELETE FROM " + table + " WHERE InvoiceId= \'" + values[0] + "\'"
-    elif table == "Supplier1":
-        sql = "DELETE FROM " + table + " WHERE Surname= \'" + values[0] + "\'"
-    elif table == "Supplier2":
-        sql = "DELETE FROM " + table + " WHERE SupplierID= \'" + values[0] + "\'"
-    elif table == "Product_category":
-        sql = "DELETE FROM " + table + " WHERE ProductCategoryID= \'" + values[0] + "\'"
-    elif table == "customer":
-        sql = "DELETE FROM " + table + " WHERE CustomerName= \'" + values[0] + "\'"
-    cursor.execute(sql)
+    sql = "DELETE FROM " + table + " WHERE " + identity + " = ?"
+    cursor.execute(sql, (values[0],))
+    mydb.commit()
     window.close()
 
 
+@retry_on_locked
 def search(sg):
     sg.theme('DarkAmber')
     layout = [[sg.Text('Please select the table to be searched from')],
@@ -393,6 +388,7 @@ def search(sg):
         search_helper(sg, "customer", "CustomerName")
 
 
+@retry_on_locked
 def search_helper(sg, table, identity):
     sg.theme('DarkAmber')
     layout = [[sg.Text(f'Enter {identity}'), sg.InputText()],
@@ -401,29 +397,13 @@ def search_helper(sg, table, identity):
     event, values = window.read()
     if event == sg.WIN_CLOSED or event == 'Close':
         window.close()
-    elif table == "Admin":
-        sql = "SELECT * FROM " + table + " WHERE Username= \'" + values[0] + "\'"
-    elif table == "Inventory":
-        sql = "SELECT * FROM " + table + " WHERE ProductID= \'" + values[0] + "\'"
-    elif table == "sales":
-        sql = "SELECT * FROM " + table + " WHERE SalesID= \'" + values[0] + "\'"
-    elif table == "Purchase_order":
-        sql = "SELECT * FROM " + table + " WHERE PurchaseID= \'" + values[0] + "\'"
-    elif table == "Product":
-        sql = "SELECT * FROM " + table + " WHERE ProductName= \'" + values[0] + "\'"
-    elif table == "Invoice":
-        sql = "SELECT * FROM " + table + " WHERE InvoiceId= \'" + values[0] + "\'"
-    elif table == "Supplier":
-        sql = "SELECT * FROM " + table + " WHERE Surname= \'" + values[0] + "\'"
-    elif table == "Product_category":
-        sql = "SELECT * FROM " + table + " WHERE ProductCategoryID= \'" + values[0] + "\'"
-    elif table == "customer":
-        sql = "SELECT * FROM " + table + " WHERE CustomerName= \'" + values[0] + "\'"
-    cursor.execute(sql)
+    sql = "SELECT * FROM " + table + " WHERE " + identity + " = ?"
+    cursor.execute(sql, (values[0],))
     view(sg)
     window.close()
 
 
+@retry_on_locked
 def update(sg):
     sg.theme('DarkAmber')
     layout = [[sg.Text(f'Enter table '), sg.InputText()],
@@ -436,6 +416,7 @@ def update(sg):
     update1(sg, values[0])
 
 
+@retry_on_locked
 def update1(sg, table):
     sg.theme('DarkAmber')
     layout = [[sg.Text(f'Select old CustomerName for {table}'), sg.InputText()],
@@ -445,11 +426,13 @@ def update1(sg, table):
               [sg.Button('Submit')]]
     window = sg.Window('Update Table', layout)
     event, values = window.read()
-    sql = "UPDATE " + table + " SET CustomerName =\'" + values[1] + "\', PhoneNum=\'" + values[2] + "\',email = \'" + \
-          values[3] + "\' WHERE CustomerName= \'" + values[0] + "\'"
-    cursor.execute(sql)
+    sql = "UPDATE " + table + " SET CustomerName = ?, PhoneNum = ?, email = ? WHERE CustomerName = ?"
+    cursor.execute(sql, (values[1], values[2], values[3], values[0]))
+    mydb.commit()
     window.close()
 
+
+@retry_on_locked
 def fetch_past_sales():
     past_sales = []
     try:
@@ -459,11 +442,11 @@ def fetch_past_sales():
             # Format the sales summary as needed
             sale_summary = f"Invoice ID: {row[0]}, Date: {row[1]}"
             past_sales.append(sale_summary)
-    except mysql.connector.Error as err:
+    except sqlite3.Error as err:
         print("Error occurred: ", err)
     return past_sales
 
-
+@retry_on_locked
 def get_receipt_for_sale(sale_summary):
     # Extract InvoiceId from the sale_summary
     invoice_id = sale_summary.split(",")[0].split(":")[1].strip()
@@ -471,7 +454,7 @@ def get_receipt_for_sale(sale_summary):
     receipt = "----- Receipt -----\n"
     try:
         # Fetch sale details from the database
-        cursor.execute("SELECT ProductID, Quantity, Price FROM SalesOrder2 WHERE InvoiceID = %s", (invoice_id,))
+        cursor.execute("SELECT ProductID, Quantity, Price FROM SalesOrder2 WHERE SalesID = ?", (invoice_id,))
         results = cursor.fetchall()
 
         total_cost = 0
@@ -482,11 +465,30 @@ def get_receipt_for_sale(sale_summary):
 
         receipt += f"Total Cost: ${total_cost}\n"
         receipt += "------------------\n"
-    except mysql.connector.Error as err:
+    except sqlite3.Error as err:
         print("Error occurred: ", err)
         receipt += "Error in generating receipt\n"
     
     return receipt
 
 
+@retry_on_locked
+def generate_invoice_id():
+    return str(uuid.uuid4())
 
+@retry_on_locked
+def save_invoice(total_cost, payment_type, customer_id=None):
+    invoice_id = generate_invoice_id()
+    date = time.strftime('%Y-%m-%d')
+    
+    cursor.execute("""INSERT INTO Invoice (InvoiceId, Total, PaymentType, Date, CustomerID) VALUES (?, ?, ?, ?, ?)""",
+                   (invoice_id, total_cost, payment_type, date, customer_id))
+    mydb.commit()
+    return invoice_id
+
+@retry_on_locked
+def save_sales_order(invoice_id, product_id, quantity, price):
+    sales_id = generate_invoice_id()
+    cursor.execute("""INSERT INTO SalesOrder2 (SalesID, ProductID, Quantity, Price) VALUES (?, ?, ?, ?)""",
+                   (sales_id, product_id, quantity, price))
+    mydb.commit()
