@@ -4,17 +4,18 @@
 this is an advanced Python application designed for efficient and seamless database management. This application stands out for its capability to directly interact with a cloud-based SQL database, offering robust functionalities without the need for local SQL installations.
 
 ## Features
-- **Cloud-Based Database Management**: Directly connects to a cloud-based SQL database, providing a hassle-free database experience.
 - **User-Friendly Interface**: Features a GUI, making database operations intuitive and accessible for all user levels.
 - **Advanced Data Handling**: Offers comprehensive functionalities for creating, reading, updating, and deleting database records with ease.
-- **No Local SQL Dependency**: Runs without needing any local SQL server installation, thanks to its cloud-based architecture.
+- **No Local SQL Dependency**: Runs without needing any local SQL server installation
 - **Simple Setup**: Only requires Python to run, with no complex installation process.
+
+## Recent Changes (May-16-2024)
+- **Switched to SQLite 3**: Replaced the previous SQL database with SQLite 3 for local database management.
+- **View Past Receipts**: Added functionality to view past receipts from the database.
 
 ## Recent changes (Jan-14-2024)
 - **Reciept Generation**: Added a Reciept generation feature, where after a sale is finalized a reciept is created 
 
-## Upcoming changes (Jan-14-2024)
-- **View Past Reciepts**: This feature is nearly complete just need to find a cleaner way of asking user for payment information and generating customer data. 
 
 
 ## Getting Started
@@ -53,19 +54,6 @@ Once you start the application by running `GUI.py`, you can interact with the cl
 
 
 
-## Past Change Log! 
-
-## Recent changes (Jan-06-2024)
-- **Enhanced Database Interactions**: Updated functions for improved compatibility and performance with the cloud-based SQL database.
-- **Code Refinement**: Improved overall code structure and readability for better maintainability.
-- **Reliable Testing**: Conducted comprehensive tests to ensure seamless integration with the SQL database.
-
-## Upcoming changes (Jan-06-2024) KEEP IN MIND STILL THE WORKS AS OF (Jan-14-2024)
-- **maybe better gui(not to good with design lol)**
-- **return system**
-- **greater inventory**
-- **login screen** 
-*note for all of these changes i have created a table formated in 3nf*
 
 
 
