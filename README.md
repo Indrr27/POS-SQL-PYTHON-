@@ -22,19 +22,24 @@ this is an advanced Python application designed for efficient and seamless datab
 
 1. **Clone the Repository**:
    ```
-   git clone https://github.com/yourusername/yourprojectname.git
+   git clone https: https://github.com/Indrr27/POS-SQL-PYTHON-.git
    ```
 2. **Navigate to the Project Directory**:
    ```
-   cd yourprojectname
+   cd POS-SQL-PYTHON-
    ```
-3. **Run the GUI Script**:
+3. **Install the required packages**:
+   ```
+   pip install -r requirements.txt
+   ```   
+4. **Run the GUI Script**:
    ```
    python GUI.py
    ```
 
 ## Requirements
 - Python 3.x
+- PySimpleGUI
 
 ## How to Use
 Once you start the application by running `GUI.py`, you can interact with the cloud-based SQL database through the graphical user interface. The application allows you to perform various database operations in a user-friendly manner.
